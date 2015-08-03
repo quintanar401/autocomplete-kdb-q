@@ -1,0 +1,34 @@
+{
+  "name": "autocomplete-kdb-q",
+  "main": "./lib/autocomplete-kdb-q",
+  "version": "0.0.0",
+  "description": "Autocomplete provider for KDB+ Q",
+  "keywords": [
+    "KDB",
+    "Q",
+    "autocomplete-plus",
+    "autocomplete"
+  ],
+  "activationCommands": {
+  },
+  "repository": "https://github.com/quintanar401/autocomplete-kdb-q",
+  "license": "MIT",
+  "engines": {
+    "atom": ">=1.0.0 <2.0.0"
+  },
+  "dependencies": {
+    "underscore-plus": "1.x"
+  },
+  "providedServices": {
+    "autocomplete.provider": {
+      "versions": {
+        "2.0.0": "provide"
+      }
+    },
+    "linter": {
+      "versions": {
+        "1.0.0": "provideLinter"
+      }
+    }
+  }
+}

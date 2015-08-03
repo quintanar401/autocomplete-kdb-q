@@ -1,0 +1,115 @@
+// The ui-variables file is provided by base themes provided by Atom.
+//
+// See https://github.com/atom/atom-dark-ui/blob/master/styles/ui-variables.less
+// for a full listing of what's available.
+@import "ui-variables";
+
+@atom-kdb-padding: 20px;
+@atom-kdb-margin: 20px;
+@atom-kdb-height: 180px;
+
+atom-kdb-reference > div > div {
+  max-height: @atom-kdb-height;
+  overflow-y: auto;
+}
+
+atom-kdb-reference {
+  > div {
+    position: relative;
+  }
+}
+
+atom-kdb-reference {
+
+  > div {
+
+    > div {
+
+      padding: 0 @atom-kdb-padding @atom-kdb-padding;
+    }
+  }
+
+  ul {
+
+    list-style: none;
+    padding-left: 0;
+  }
+
+  li {
+
+    cursor: pointer;
+    padding: 6px 0;
+
+    &:hover {
+
+      background: rgba(100, 100, 100, 0.3);
+    }
+  }
+
+  h3 {
+
+    margin: 0;
+
+    > span {
+
+      display: block;
+      float: left;
+
+      &:first-child {
+
+        width: 70%;
+      }
+
+      &:nth-child(2) {
+
+        width: 30%;
+        text-align: right;
+      }
+    }
+  }
+
+  .clear {
+
+    clear: left;
+  }
+
+  strong {
+
+    color: @text-color-info;
+  }
+
+  .darken {
+
+    color: darken(@text-color, 20%);
+  }
+}
+
+atom-text-editor::shadow .atom-kdb-definition-marker {
+
+  div {
+
+    transition: opacity 0.75s ease;
+    opacity: 0;
+    background: @background-color-selected;
+    border-bottom: 4px solid @background-color-warning;
+  }
+
+  &.active {
+
+    div {
+
+      opacity: 1;
+    }
+  }
+}
+
+.atom-kdb-reference-close {
+
+  margin: @atom-kdb-padding;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.autocomplete-kdb-q {
+}
