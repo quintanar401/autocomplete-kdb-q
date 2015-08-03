@@ -1,7 +1,7 @@
 {
   "name": "autocomplete-kdb-q",
   "main": "./lib/autocomplete-kdb-q",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Autocomplete provider for KDB+ Q",
   "keywords": [
     "KDB",
@@ -9,8 +9,7 @@
     "autocomplete-plus",
     "autocomplete"
   ],
-  "activationCommands": {
-  },
+  "activationCommands": {},
   "repository": "https://github.com/quintanar401/autocomplete-kdb-q",
   "license": "MIT",
   "engines": {
