@@ -11,13 +11,10 @@
   ]
 'menu': [
   {
-    'label': 'Packages'
+    'label': 'KDB-Q'
     'submenu': [
-      'label': 'KDB-Q'
-      'submenu': [
-        {label: 'Find definition', command: 'kdb-q:definition'},
-        {label: 'Find references', command: 'kdb-q:references'}
-      ]
+      {label: 'Find definition', command: 'kdb-q:definition'},
+      {label: 'Find references', command: 'kdb-q:references'}
     ]
   }
 ]

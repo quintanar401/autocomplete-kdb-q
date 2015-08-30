@@ -6,3 +6,6 @@
 * linter support: brackets, indentation.
 * references
 * go-to-definiton
+## 0.2.0
+* Add ability to process files without a path - Query Results in particular.
+* Move main menu into toplevel KDB-Q

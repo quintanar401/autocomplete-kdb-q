@@ -57,7 +57,7 @@ class Reference
       @definitions.idx++
       @definitions.idx = -1 if @definitions.idx >= refs.refs.length
     else
-      @definitions = lastPos: editor.getCursorBufferPosition(), file: editor.getPath(), idx: 0, name: refs.name
+      @definitions = lastPos: editor.getCursorBufferPosition(), file: @getPath(editor), idx: 0, name: refs.name
 
     if @definitions.idx >= 0
       ref = refs.refs[@definitions.idx]
@@ -92,3 +92,7 @@ class Reference
     setTimeout (-> decoration?.setProperties(type: 'highlight', class: 'atom-kdb-definition-marker active', invalidate: 'touch')), 1
     setTimeout (-> decoration?.setProperties(type: 'highlight', class: 'atom-kdb-definition-marker', invalidate: 'touch')), 1501
     setTimeout (-> marker.destroy()), 2500
+
+  getPath: (editor) ->
+    return path if path = editor.getPath()
+    editor.getURI()

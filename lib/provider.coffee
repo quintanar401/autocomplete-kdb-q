@@ -45,7 +45,7 @@ module.exports =
         return unless editor.getGrammar().scopeName == "source.q"
 
         # process the new buffer
-        if !(editor.getPath() in @openedFiles)
+        if !(@getPath(editor) in @openedFiles)
           @addBuffer editor
       @subscriptions.add atom.project.onDidChangePaths (paths) =>
         debug "OnDidChangePaths: #{paths}"
@@ -58,14 +58,14 @@ module.exports =
 
     lint: (editor)->
       return new Promise (resolve, reject) =>
-        @processBuffer editor.getPath(), editor.getBuffer().getText()
-        return resolve [] unless f = @files[editor.getPath()]
+        @processBuffer @getPath(editor), editor.getBuffer().getText()
+        return resolve [] unless f = @files[@getPath editor]
         debug 'LINT: '+f.path
         resolve f.errors
 
     getSuggestions:  ({editor, bufferPosition, scopeDescriptor, prefix, activatedManually}) ->
       res = []
-      path = editor.getPath()
+      path = @getPath editor
       return res unless prefix = @getPrefix editor, bufferPosition
       for p,f of @files
         res = res.concat (f.map.getSymsByPrefix path, bufferPosition.row, prefix) if @files[p]
@@ -85,6 +85,10 @@ module.exports =
           res.refs = res.refs.concat (f.map.getSymsByName res.name).map (s) ->
             line: s.line+1, col: s.col, file: p, isAssign: s.isAssign, text: s.text
       res
+
+    getPath: (editor) ->
+      return path if path = editor.getPath()
+      editor.getURI()
 
     getPrefix: (editor, bufferPosition) ->
       regex = /(?:`[\w0-9_:\.]+|[\w0-9_\.]+)$/
@@ -141,7 +145,7 @@ module.exports =
     addBuffer: (editor) ->
       bufferSubs = new CompositeDisposable
       buffer = editor.getBuffer()
-      path = editor.getPath()
+      path = @getPath(editor)
 
       @openedFiles.push path
       bufferSubs.add buffer.onDidDestroy =>
@@ -208,8 +212,7 @@ module.exports =
 
       debug "Changing project: old:#{oldDirs}, new:#{newDirs}"
       @projectPaths = paths
-      opened = for e in atom.workspace.getTextEditors()
-        e.getPath()
+      opened = @getPath e for e in atom.workspace.getTextEditors()
       for f of @files
         @files[f] = null unless @isProjectFile(f) or f in opened
 
