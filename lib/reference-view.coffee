@@ -82,7 +82,7 @@ class ReferenceView extends HTMLElement
   updateItems: (file, text) ->
     lines = text.split('\n')
     @itemsToUpdate = @itemsToUpdate.filter (i) ->
-      return true unless file = i.item.file
+      return true unless file is i.item.file
       i.htmlItem.textContent = lines[i.item.line-1] || 'error'
       false
 

@@ -1,6 +1,5 @@
-{CompositeDisposable, Directory} = require 'atom'
+{CompositeDisposable, Directory, TextBuffer} = require 'atom'
 Parser = require './parser'
-SymMap = require './symMap'
 _ = require 'underscore-plus'
 fs = require 'fs'
 
@@ -22,28 +21,14 @@ module.exports =
     scope: 'file'
     lintOnFly: true
 
-    #package
-    grammar: null
-    parser: null
-    itemsToProcess: null
-    openedFiles: null
-    files: null
-    id = 0
-    waitForChangingStop: false
-    scheduled: false
-    projectPaths: null
-
     constructor: ->
-      atom.me = this
       @itemsToProcess = []
       @openedFiles = []
       @files = {}
       @subscriptions = new CompositeDisposable
-      @parser = new Parser
       # new file is opened
       @subscriptions.add atom.workspace.observeTextEditors (editor) =>
         return unless editor.getGrammar().scopeName == "source.q"
-
         # process the new buffer
         if !(@getPath(editor) in @openedFiles)
           @addBuffer editor
@@ -55,20 +40,22 @@ module.exports =
 
     dispose: =>
       @subscriptions.dispose()
+      @subscriptions = null
+      @projectPaths = []; @openedFiles = []; @itemsToProcess = []; @files = {}
 
     lint: (editor)->
       return new Promise (resolve, reject) =>
-        @processBuffer @getPath(editor), editor.getBuffer().getText()
         return resolve [] unless f = @files[@getPath editor]
         debug 'LINT: '+f.path
-        resolve f.errors
+        resolve f.errors unless f.modified
+        f.lint = resolve
 
     getSuggestions:  ({editor, bufferPosition, scopeDescriptor, prefix, activatedManually}) ->
       res = []
       path = @getPath editor
       return res unless prefix = @getPrefix editor, bufferPosition
       for p,f of @files
-        res = res.concat (f.map.getSymsByPrefix path, bufferPosition.row, prefix) if @files[p]
+        res = res.concat (f.map.getSymsByPrefix bufferPosition.row, prefix, path is f.path) if f?.map?
       res.sort (x,y) -> x.score >= y.score
       res
 
@@ -81,7 +68,7 @@ module.exports =
       res.name = prefix + @getPostfix line, pos
       debug "Reference for #{res.name}"
       for p,f of @files
-        if @files[p]
+        if f?.map?
           res.refs = res.refs.concat (f.map.getSymsByName res.name).map (s) ->
             line: s.line+1, col: s.col, file: p, isAssign: s.isAssign, text: s.text
       res
@@ -102,40 +89,18 @@ module.exports =
 
     isParsed: (path) ->
       return false unless f = @files[path]
-      return false if f.modified
       true
 
     initFile: (path) ->
-      return if @files[path]
-      @files[path] = path: path, map: new SymMap(path), errors: [], res: null, parseTS: (new Date()).toISOString(), modified: false
+      lint = @files[path]?.lint
+      @files[path] = path: path, map: null, errors: null, parseTS: (new Date()).toISOString(), modified: false, lint: lint
 
     removeFile: (path) ->
+      @files[path].modified = false
+      @files[path].lint?([])
+      @files[path].lint = null
       return if @isProjectFile path
       @files[path] = null
-
-    parseFile: (path, text) ->
-      try
-        debug 'Parsing '+path
-        @grammar = atom.grammars.grammarForScopeName('source.q') unless @grammar
-        oldTPL = @grammar.maxTokensPerLine
-        @grammar.maxTokensPerLine = 1000000
-        lines = @grammar.tokenizeLines text
-        @grammar.maxTokensPerLine = oldTPL
-        @files[path].res = @parser.parseFile lines
-        @files[path].errors = @parser.errors.map (e) -> e.filePath = path; e
-        @extractVars @files[path]
-        @files[path].modified = false
-      catch err
-        throw err
-        console.error 'KDB-Autocomplete: unexpected error: '+err
-
-    extractVars: (file) ->
-      for blk in file.res
-        continue if blk.stms.stm isnt 'vars'
-        for v,i in blk.stms.vars
-          startLine = if v.isGlobal is 'no' then blk.startLine else 0
-          endLine = if v.isGlobal is 'no' then blk.endLine else 1000000
-          file.map.addSym v, [startLine,endLine], if i == 0 then blk.comment else null
 
     isProjectFile: (path) ->
       for p in @projectPaths
@@ -146,41 +111,46 @@ module.exports =
       bufferSubs = new CompositeDisposable
       buffer = editor.getBuffer()
       path = @getPath(editor)
+      @initFile path
+      @files[path].modified = true
+      parser = new Parser buffer
+      parser.onParsed => @processBuffer path, parser
 
       @openedFiles.push path
+      bufferSubs.add buffer.onDidChange => @files[path].modified = true
       bufferSubs.add buffer.onDidDestroy =>
         debug 'onDidDestroy: '+path
         @openedFiles = _.without @openedFiles, path
         @removeFile path
+        parser.destroy()
         bufferSubs.dispose()
-      bufferSubs.add buffer.onDidChange =>
-        debug 'onDidChange: '+path
-        @waitForChangingStop = true
-        return unless f = @files[path]
-        f.modified = true
-      bufferSubs.add buffer.onDidStopChanging =>
-        debug 'onDidStopChanging: '+path
-        @waitForChangingStop = false
-        @scheduleParseTask()
-        @processBuffer path, buffer.getText()
-      # file will parsed by onDidStopChanging
+        parser = buffer = bufferSubs = null
+      bufferSubs.add buffer.onDidChangePath (newPath) =>
+        @openedFiles = _.without @openedFiles, path
+        @openedFiles.push newPath
+        @initFile newPath
+        @files[newPath].map = @files[path].map
+        @files[newPath].errors = @files[path].errors
+        @removeFile path
+        path = newPath
 
-    processBuffer: (path, text) ->
-      debug "process buffer "+path
-      return if @isParsed path
-      @initFile path
-      @parseFile path, text
-
-    # run project parsing in the background
-    scheduleParseTask: ->
-      return if @scheduled
-      @scheduled = true
-      _.delay (=> @processFiles()), 100
+    processBuffer: (path, parser) ->
+      try
+        debug "process buffer "+path
+        st = new Date()
+        @initFile path; f = @files[path]
+        f.errors = parser.getErrors().map (e) -> e.filePath = path; e
+        f.map = parser.getVars()
+        f.modified = false
+        f.lint?(f.errors)
+        f.lint = null
+        console.log 'Post Parse: ' + (new Date() - st)
+      catch err
+        console.error 'KDB-Autocomplete: unexpected error: '+err
 
     processFiles: ->
       debug 'Process Project'
-      @scheduled = false
-      return if @waitForChangingStop or @itemsToProcess.length is 0
+      return if @itemsToProcess.length is 0
       f = @itemsToProcess.pop()
       if f.isDirectory()
         debug "Processing dir #{f.getPath()}"
@@ -191,16 +161,25 @@ module.exports =
             files = files.filter (f) => f.isDirectory() or /\.[qk]$/.test f.getPath()
             debug "Loaded #{files.length} items"
             @itemsToProcess = @itemsToProcess.concat files if files.length > 0
-          @scheduleParseTask()
+          _.delay (=> @processFiles()), 100
       else
         debug "Processing file #{f.getPath()}"
         f.read(true).then (text) =>
           debug "Loaded #{f.getPath()}"
-          @processBuffer f.getPath(), text if @isProjectFile f.getPath()
-          @scheduleParseTask()
+          if @isProjectFile f.getPath()
+            buffer = new TextBuffer text
+            parser = new Parser buffer
+            parser.on 'parsed', =>
+              @processBuffer f.getPath(), parser
+              parser.destroy()
+              buffer.destroy()
+              parser = buffer = null
+              _.delay (=> @processFiles()), 100
+          else
+            _.delay (=> @processFiles()), 100
          , (err) =>
           console.error "autocomplete-kdb-q: can't read #{f.getPath()} with #{err}"
-          @scheduleParseTask()
+          _.delay (=> @processFiles()), 100
 
     updateProjectFiles: (paths) ->
       newDirs = []; oldDirs = []
@@ -217,4 +196,4 @@ module.exports =
         @files[f] = null unless @isProjectFile(f) or f in opened
 
       @itemsToProcess = newDirs.map (d) -> new Directory(d)
-      @scheduleParseTask()
+      _.delay (=> @processFiles()), 100

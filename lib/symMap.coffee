@@ -32,9 +32,7 @@ class Sym
 
 module.exports =
   class SymMap
-    path: null
-
-    constructor: (@path) ->
+    constructor: ->
       @map = {}
 
     addSym: (sym, range, comment) ->
@@ -47,12 +45,11 @@ module.exports =
         res = res.concat s.syms if s.sym.text is name
       res
 
-    getSyms: (path, line) ->
-      @getSymsByPrefix path, line, null
+    getSyms: (line, glOnly) ->
+      @getSymsByPrefix line, null, glOnly
 
-    getSymsByPrefix: (path, line, prefix) ->
+    getSymsByPrefix: (line, prefix, glOnly) ->
       res = []
-      glOnly = @path isnt path
       for n,s of @map
         continue if !s.global and glOnly
         continue unless prefix and s.sym.text.startsWith prefix
