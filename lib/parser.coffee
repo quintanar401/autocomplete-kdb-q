@@ -31,9 +31,7 @@ module.exports =
       @emitter = new Emitter
       @tokenizer = new TokenBuffer buffer
       @tokenizer.onTokenized =>
-        st = new Date()
         lines = @parseFile @tokenizer.getLines()
-        console.log 'Parse: ' + (new Date() - st)
         @emitter.emit 'parsed'
 
     destroy: ->
@@ -48,12 +46,11 @@ module.exports =
       errors = errors.concat l.errors for l in @tokenizer.getLines() when l.errors?.length > 0
       errors
 
-    getVars: (minLength = 3)->
-      map = new SymMap
+    getVars: (globals)->
+      map = new SymMap globals
       for l,i in @tokenizer.getLines()
         continue if l.dirty or typeof l.state is 'string' or l.names?.length is 0
         for n in l.names
-          continue if n.text.length < minLength
           startLine = if n.isGlobal is 'no' then i-l.offset else 0
           endLine = if n.isGlobal is 'no' then l.nextBlk else 1000000
           map.addSym n, [startLine,endLine], n.comment || null
@@ -93,7 +90,7 @@ module.exports =
           continue
         l.blkStart = t0 isnt 'ws'
         if l.blkStart and typeof state isnt 'string'
-          l.errors.push @getErr "Unmatched opening bracket: "+i.value, i.line, i for i in state.parens
+          l.errors.push @getErr "Unmatched opening bracket: "+j.value, j.line, j for j in state.parens
         if t0 is 'syscmd'
           state = t0
           l.state = t0
@@ -107,7 +104,7 @@ module.exports =
         else
           state = _.deepClone state
         state.ns = ns; l.names = []; l.offset = offset
-        l.state = @parseLine l,toks, state, i
+        l.state = @parseLine l, toks, state, i
         maySkip = _.isEqual l.state, prevState
       @addComments lines
       @addEOB lines

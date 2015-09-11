@@ -64,4 +64,17 @@ You can jump to the definition (assignment) of any name. Put the cursor on it an
 
 ## settings
 
-Settings are not supported atm. Use `linter` and `autocomplete-plus` settings to change the general behavior.
+Autocomplete looks for `.autocomplete-kdb-q.json` file in each project directory. This file can contain some settings:
+* includePaths - list of paths (relative or absolute) to include into this project.
+* ignorePaths - list of paths (relative or absolute) to ignore.
+* ignoreRoot - ignore all files or dirs in the project's root directory.
+* ignoreNames - ignore these names (like ".svn").
+
+Example:
+```
+{
+  "ignorePaths": ["node_modules"],
+  "includePaths": ["C:\\somepath\\test.q","C:\\somedir"],
+  "ignoreNames": ["a2014.q",".git"]
+}
+```

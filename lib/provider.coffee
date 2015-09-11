@@ -1,7 +1,9 @@
-{CompositeDisposable, Directory, TextBuffer} = require 'atom'
+{CompositeDisposable, Directory, File, TextBuffer} = require 'atom'
 Parser = require './parser'
+SymMap = require './symMap'
 _ = require 'underscore-plus'
 fs = require 'fs'
+nodePath = require 'path'
 
 printDebug = false
 debug = if printDebug or require('process').env['KDB_DEBUG'] is 'yes'
@@ -25,6 +27,7 @@ module.exports =
       @itemsToProcess = []
       @openedFiles = []
       @files = {}
+      @globals = new SymMap null
       @subscriptions = new CompositeDisposable
       # new file is opened
       @subscriptions.add atom.workspace.observeTextEditors (editor) =>
@@ -36,12 +39,14 @@ module.exports =
         debug "OnDidChangePaths: #{paths}"
         @updateProjectFiles paths
       @projectPaths = []
+      @projectCfgs = {}
       @updateProjectFiles atom.project.getPaths()
 
     dispose: =>
       @subscriptions.dispose()
       @subscriptions = null
-      @projectPaths = []; @openedFiles = []; @itemsToProcess = []; @files = {}
+      @projectCfgs = {}; @projectPaths = [];
+      @openedFiles = []; @itemsToProcess = []; @files = {}
 
     lint: (editor)->
       return new Promise (resolve, reject) =>
@@ -54,9 +59,9 @@ module.exports =
       res = []
       path = @getPath editor
       return res unless prefix = @getPrefix editor, bufferPosition
-      for p,f of @files
-        res = res.concat (f.map.getSymsByPrefix bufferPosition.row, prefix, path is f.path) if f?.map?
-      res.sort (x,y) -> x.score >= y.score
+      res = res.concat (@files[path].map.getSymsByPrefix bufferPosition.row, prefix, true) if @files[path]?.map?
+      res = res.concat @globals.getSymsByPrefix bufferPosition.row, prefix, false
+      res.sort (x,y) -> if x.score > y.score then -1 else if x.score < y.score then 1 else 0
       res
 
     getReferences: (editor) ->
@@ -93,6 +98,7 @@ module.exports =
 
     initFile: (path) ->
       lint = @files[path]?.lint
+      @files[path]?.map?.destroy()
       @files[path] = path: path, map: null, errors: null, parseTS: (new Date()).toISOString(), modified: false, lint: lint
 
     removeFile: (path) ->
@@ -117,7 +123,7 @@ module.exports =
       parser.onParsed => @processBuffer path, parser
 
       @openedFiles.push path
-      bufferSubs.add buffer.onDidChange => @files[path].modified = true
+      bufferSubs.add buffer.onDidChange => @files[path]?.modified = true
       bufferSubs.add buffer.onDidDestroy =>
         debug 'onDidDestroy: '+path
         @openedFiles = _.without @openedFiles, path
@@ -129,22 +135,21 @@ module.exports =
         @openedFiles = _.without @openedFiles, path
         @openedFiles.push newPath
         @initFile newPath
-        @files[newPath].map = @files[path].map
-        @files[newPath].errors = @files[path].errors
+        # TODO: fix this for map
+        @files[newPath].map = @files[path]?.map
+        @files[newPath].errors = @files[path]?.errors
         @removeFile path
         path = newPath
 
     processBuffer: (path, parser) ->
       try
         debug "process buffer "+path
-        st = new Date()
         @initFile path; f = @files[path]
         f.errors = parser.getErrors().map (e) -> e.filePath = path; e
-        f.map = parser.getVars()
+        f.map = parser.getVars @globals
         f.modified = false
         f.lint?(f.errors)
         f.lint = null
-        console.log 'Post Parse: ' + (new Date() - st)
       catch err
         console.error 'KDB-Autocomplete: unexpected error: '+err
 
@@ -152,34 +157,42 @@ module.exports =
       debug 'Process Project'
       return if @itemsToProcess.length is 0
       f = @itemsToProcess.pop()
-      if f.isDirectory()
-        debug "Processing dir #{f.getPath()}"
-        f.getEntries (err, files) =>
-          if err
-            console.error "autocomplete-kdb-q: can't read #{f.getPath()} with #{err}"
-          else
-            files = files.filter (f) => f.isDirectory() or /\.[qk]$/.test f.getPath()
-            debug "Loaded #{files.length} items"
-            @itemsToProcess = @itemsToProcess.concat files if files.length > 0
-          _.delay (=> @processFiles()), 100
-      else
-        debug "Processing file #{f.getPath()}"
-        f.read(true).then (text) =>
-          debug "Loaded #{f.getPath()}"
-          if @isProjectFile f.getPath()
-            buffer = new TextBuffer text
-            parser = new Parser buffer
-            parser.on 'parsed', =>
-              @processBuffer f.getPath(), parser
-              parser.destroy()
-              buffer.destroy()
-              parser = buffer = null
-              _.delay (=> @processFiles()), 100
-          else
+      try
+        if typeof f.item is 'string'
+          debug "Processing item #{f.item}"
+          f.item = if (fs.statSync f.item).isFile() then new File f.item else new Directory f.item
+        if f.item.isDirectory()
+          debug "Processing dir #{f.item.getPath()}"
+          f.item.getEntries (err, files) =>
+            if err
+              console.error "autocomplete-kdb-q: can't read #{f.item.getPath()} with #{err}"
+            else
+              files = files.filter (file) => (file.isDirectory() or /\.[qk]$/.test file.getPath()) and !(file.getPath() in @projectCfgs[f.base].ignorePaths)
+              files = files.filter (file) => !(file.getBaseName() in @projectCfgs[f.base].ignoreNames)
+              debug "Loaded #{files.length} items"
+              files = files.map (file) -> base: f.base, item: file
+              @itemsToProcess = @itemsToProcess.concat files if files.length > 0
             _.delay (=> @processFiles()), 100
-         , (err) =>
-          console.error "autocomplete-kdb-q: can't read #{f.getPath()} with #{err}"
-          _.delay (=> @processFiles()), 100
+        else
+          debug "Processing file #{f.item.getPath()}"
+          f.item.read(true).then (text) =>
+            debug "Loaded #{f.item.getPath()}"
+            if @isProjectFile f.item.getPath()
+              buffer = new TextBuffer text
+              parser = new Parser buffer
+              parser.onParsed =>
+                @processBuffer f.item.getPath(), parser
+                parser.destroy()
+                buffer.destroy()
+                parser = buffer = null
+                _.delay (=> @processFiles()), 100
+            else
+              _.delay (=> @processFiles()), 100
+           , (err) =>
+            console.error "autocomplete-kdb-q: can't read #{f.item.getPath()} with #{err}"
+            _.delay (=> @processFiles()), 100
+      catch error
+        console.error "autocomplete-kdb-q: unexpected error #{error}"
 
     updateProjectFiles: (paths) ->
       newDirs = []; oldDirs = []
@@ -195,5 +208,21 @@ module.exports =
       for f of @files
         @files[f] = null unless @isProjectFile(f) or f in opened
 
-      @itemsToProcess = newDirs.map (d) -> new Directory(d)
+      newDirs.map (d) =>
+        cfg = nodePath.join d, '.autocomplete-kdb-q.json'
+        @projectCfgs[d] = ignorePaths: [], ignoreNames: [], ignoreRoot: false
+        if fs.existsSync cfg
+          try
+            @projectCfgs[d] = JSON.parse fs.readFileSync cfg
+            if @projectCfgs[d].includePaths
+              for p in @projectCfgs[d].includePaths
+                @itemsToProcess.push base: d, item: (if nodePath.isAbsolute(p) then p else nodePath.join d, p)
+            @projectCfgs[d].ignorePaths ?= []
+            @projectCfgs[d].ignorePaths = @projectCfgs[d].ignorePaths.map (p) ->
+              if nodePath.isAbsolute(p) then p else nodePath.join d, p
+            @projectCfgs[d].ignoreNames ?= []
+            @projectCfgs[d].ignoreRoot ?= false
+          catch error
+            console.error "Couldn't load #{cfg}: " + error
+      newDirs.map (d) => (@itemsToProcess.push base: d, item: new Directory d) unless @projectCfgs[d].ignoreRoot
       _.delay (=> @processFiles()), 100

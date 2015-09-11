@@ -43,7 +43,7 @@ class TokenBuffer
       @lines[i] = dirty: true for i in [event[0].start.row..event[0].end.row] by 1
     else
       l = @getNewLines event[1].end.row - event[1].start.row
-      @lines[event[0].start.row].dirty = true
+      @lines[event[0].start.row] = dirty: true
       @lines = @lines.slice(0,event[0].start.row+1).concat(l).concat @lines.slice event[0].end.row+1
 
   startUpdate: ->
@@ -61,11 +61,14 @@ class TokenBuffer
       @dirty = false
       @emitter.emit 'tokenized'
       return
-    for i in [n..n+50] by 1
-      if @lines[i]?.dirty
-        @lines[i].data = @grammar.tokenizeLine @buffer.lineForRow(i), (if i is 0 then null else @lines[i-1].data.ruleStack), i is 0
-        @lines[i].dirty = false
-    _.defer => @updateNextChunk n+51
+    d = new Date
+    while true
+      if @lines[n]?.dirty
+        @lines[n].data = @grammar.tokenizeLine @buffer.lineForRow(n), (if n is 0 then null else @lines[n-1].data.ruleStack), n is 0
+        @lines[n].dirty = false
+      n++
+      break if @lines.length is n or (new Date) - d > 50
+    _.defer => @updateNextChunk n
 
   destroy: ->
     @subscriptions?.dispose()

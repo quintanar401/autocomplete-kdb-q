@@ -9,3 +9,8 @@
 ## 0.2.0
 * Add ability to process files without a path - Query Results in particular.
 * Move main menu into toplevel KDB-Q
+## 0.3.0
+* Add autocomplete cfg file
+* Parser and Tokenizer are completely new and incremental, they are fast on small changes.
+* Globals for autocomplete are moved into a special map to make the search faster.
+* Score for items now include their reference number and comment.
