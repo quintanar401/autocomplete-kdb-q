@@ -10,3 +10,4 @@
 'atom-text-editor[data-grammar="source q"]':
   'ctrl-alt-d': 'kdb-q:definition'
   'ctrl-shift-r': 'kdb-q:references'
+  'f1': 'kdb-q:doc'

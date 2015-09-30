@@ -1,4 +1,5 @@
 ReferenceView = require './reference-view'
+DocView = require './doc-view'
 
 printDebug = false
 debug = if printDebug or require('process').env['KDB_DEBUG'] is 'yes'
@@ -14,10 +15,14 @@ class Reference
 
     @definitions = null
     @references = null
+    @docSym = null
     @reference = new ReferenceView()
     @reference.initialize(this)
-    @referencePanel = atom.workspace.addBottomPanel(item: @reference, priority: 0)
-    @referencePanel.hide()
+    @referencePanel = atom.workspace.addBottomPanel(item: @reference, priority: 0, visible: false)
+
+    @doc = new DocView
+    @doc.initialize(this)
+    @docPanel = atom.workspace.addRightPanel(item: @doc, priority: 0, visible: false)
 
     atom.views.getView(@referencePanel).classList.add('atom-kdb-reference-panel', 'panel-bottom')
 
@@ -42,6 +47,13 @@ class Reference
   findReference: ->
     return unless editor = atom.workspace.getActiveTextEditor()
     refs = @provider.getReferences editor
+    @showReferences refs
+
+  findReferenceByName: (name) ->
+    refs = @provider.getReferencesByName name
+    @showReferences refs
+
+  showReferences: (refs) ->
     return unless refs.refs.length>0
     @references = refs
     @referencePanel.show()
@@ -65,6 +77,17 @@ class Reference
     else
       @openFileAndGoTo @definitions.lastPos, @definitions.file
 
+  showDoc: ->
+    return unless editor = atom.workspace.getActiveTextEditor()
+    @docSyms = @provider.getDoc editor
+    @doc.add @docSyms if @docSyms
+    @docPanel.show()
+
+  showDocByRef: (ref) ->
+    @docSyms = @provider.getDocByRef ref
+    @doc.add @docSyms if @docSyms
+    @docPanel.show()
+
   hide: ->
     @referencePanel.hide()
 
@@ -77,6 +100,14 @@ class Reference
 
     @referencePanel?.destroy()
     @referencePanel = null
+
+    @doc?.destroy()
+    @doc = null
+
+    @docPanel?.destroy()
+    @docPanel = null
+
+    @provider = @references = @definitions = @docSyms = null
 
   openFileAndGoTo: (position, file, name) ->
     debug "Open and go to #{file} at #{position} with #{name}"

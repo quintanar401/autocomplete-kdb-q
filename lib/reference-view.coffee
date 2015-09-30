@@ -5,9 +5,6 @@ debug = if printDebug or require('process').env['KDB_DEBUG'] is 'yes'
     (obj) ->
 
 class ReferenceView extends HTMLElement
-
-  itemsToShow: 10
-
   # thanks to ternjs package
   createdCallback: ->
     @classList.add('atom-kdb-reference')
@@ -87,6 +84,8 @@ class ReferenceView extends HTMLElement
       false
 
   destroy: ->
+    @model = null
+    @itemsToUpdate = []
     @remove()
 
   getClose: ->

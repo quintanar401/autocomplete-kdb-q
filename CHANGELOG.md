@@ -14,3 +14,7 @@
 * Parser and Tokenizer are completely new and incremental, they are fast on small changes.
 * Globals for autocomplete are moved into a special map to make the search faster.
 * Score for items now include their reference number and comment.
+## 0.4.0
+* Cache autocomplete info
+* Add QDoc support
+* Add help for stdlib

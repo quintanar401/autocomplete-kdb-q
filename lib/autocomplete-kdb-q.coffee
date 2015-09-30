@@ -32,3 +32,5 @@ module.exports = AutocompleteKdbQ =
       @reference.findReference() if @reference
     @subscriptions.add atom.commands.add 'atom-text-editor', 'kdb-q:definition': (event) =>
       @reference.goToDefinition() if @reference
+    @subscriptions.add atom.commands.add 'atom-text-editor', 'kdb-q:doc': (event) =>
+      @reference.showDoc() if @reference

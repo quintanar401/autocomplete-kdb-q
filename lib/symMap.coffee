@@ -1,21 +1,37 @@
+DocEntry = require './doc-entry'
+
 class Sym
   constructor: (s) ->
     @global = false
     @cnt = 0
     @range = []
     @syms = []
-    @sym =
-      text: s.text
-      type: if s.qtype is 'name' then 'function' else 'constant'
-      baseScore: 10
+    @doc = @proto = null
+    if s.cnt
+      @deserialize s
+    else
+      @sym =
+        text: s.text
+        type: if s.qtype is 'name' then 'function' else 'constant'
+        baseScore: 10
+
+  serialize: -> { @cnt, @range, @global, @syms, @sym, @proto, doc: @doc?.serialize()}
+
+  deserialize: (data) ->
+    {@cnt, @range, @global, @syms, @sym, @proto, @doc} = data
+    @proto.isGlobal = if @global then 'yes' else 'no'
+    @doc = new DocEntry @doc if @doc
 
   updateSym: (s, r, c) ->
     @cnt++
     @global = @global or s.isGlobal is 'yes' or @sym.type is 'constant'
     @range.push r unless @hasRange r
     @sym.baseScore = Math.min @sym.baseScore, if s.qtype is 'name' then (if s.isGlobal is 'yes' then 0 else 10) else 0
-    @syms.push s
-    @sym.description = c if c and !@sym.description
+    @syms.push col: s.col, line: s.line, isAssign: s.isAssign || false, isGlobal: s.isGlobal || 'no', text: s.text
+    @proto ?= @syms[0]
+    if c and !@sym.description
+      @sym.description = c.getFirstLine()
+      @doc = c if c
 
   hasRange: (r) ->
     for i in @range
@@ -31,8 +47,14 @@ class Sym
 
 module.exports =
   class SymMap
-    constructor: (@globals) ->
-      @map = {}
+    constructor: (@globals) -> @map = {}
+
+    serialize: -> name: s, sym: o?.serialize() for s,o of @map
+
+    deserialize: (data) ->
+      for i in data
+        @map[i.name] = new Sym i.sym
+        @globals.addGlobalSym @map[i.name].proto, @map[i.name].doc, i.sym.cnt if @map[i.name].global
 
     addSym: (sym, range, comment) ->
       wasGlobal = @map[sym.text]?.global || false
@@ -50,11 +72,9 @@ module.exports =
       @map[sym.sym.text]?.cnt -= sym.cnt
       @map[sym.sym.text] = null if (@map[sym.sym.text]?.cnt || 0) is 0
 
-    getSymsByName: (name) ->
-      res = []
-      for n,s of @map
-        res = res.concat s.syms if s?.sym.text is name
-      res
+    getSymsByName: (name) -> @map[name]?.syms || []
+
+    getSymByName: (name) -> @map[name]
 
     getSyms: (line, lOnly) ->
       @getSymsByPrefix line, null, lOnly

@@ -1,6 +1,6 @@
 # autocomplete-kdb-q package
 
-Autocomplete and linter (error checking) provider for KDB+ Q
+Autocomplete, QDoc and linter (error checking) provider for KDB+ Q
 
 ## Installation
 
@@ -15,16 +15,16 @@ The last two packages are tremendously useful themselves and can be used with ma
 
 ## Status
 
-This the first version thus it doesn't provide any settings and doesn't have much functionality.
-
-It will:
-* Process all opened Q/K files for symbols and process all Q/K files in the project directories for symbols.
-* Update its state on changes in opened files and project directories. It doesn't monitor files in the project directories though.
-* Remember all globals, local variables and symbols. It also remembers symbols with 'set' after them as globals, comments before top level definitions and assignments.
-* Show comments in the autocomplete window if they are available.
-* Provide via `linter` information about errors in indentation and unmatched brackets.
-* Provide reference view for symbols via <kbd>ctrl+shift+r</kbd> or context menu.
-* Provide go-to-definition for symbols via <kbd>ctrl+alt+d</kbd> or context menu.
+Available features:
+* Processes all open files and projects for symbols/definitions/documentation.
+* Updates automatically when new files are opened or opened files are closed/changed.
+* Provides correct autocomplete for Q names.
+* Provides via `linter` information about errors in indentation and unmatched brackets.
+* Shows short comments for names in the autocomplete window if they are available.
+* Provides reference view for symbols via <kbd>ctrl+shift+r</kbd> or context menu.
+* Provides go-to-definition for symbols via <kbd>ctrl+alt+d</kbd> or context menu.
+* Provides QDoc support for user defined functions.
+* Shows help for system and user functions via <kbd>F1</kbd> or context menu.
 
 ### Autocomplete
 
@@ -62,6 +62,46 @@ You can open the reference view for any symbol or name. Put the cursor on it and
 
 You can jump to the definition (assignment) of any name. Put the cursor on it and select from the context menu `KDB-Q/Find definition` or press <kbd>ctrl+alt+d</kbd>. If there are several definitions do this several times. After the last definition you will return to the original place.
 
+### QDoc support
+
+QDoc is implemented along JavaDoc and is compatible with the already existing QDoc schemas. All standard functions and .Q/.z functions are already documented.
+
+All tags are mutiline except @name, @file, @see and @module. @module and @file are not supported atm. All QDoc lines should start with /, all
+lines with more than one / are ignored allowing you to add private comments. The Q function or variable name should be on the next line after
+the comment block. Note that QDoc doesn't need the code to be correct.
+
+The following tags are supported:
+* @name Name - Alternative name for the QDoc entry.
+* @desc text - Any html.
+* @param Name TypeExpr text - Parameter 'Name' with type defined in 'TypeExpr', text can be any html.
+* @key Name TypeExpr text - Key of a dictionary, should follow @param.
+* @column Name TypeExpr text - Column of a table, should follow @param.
+* @returns TypeExpr text - Description of the returned value.
+* @throws Name text - Description of a possible exception. If there are several throws it is better to group them together.
+* @example code - Any Q code, it will be shown as if in the editor itself (editor is not used though).
+* @see name1 name2 ... - List of QDoc names, links will be added.
+* @link as {@link link} or {@link Some descr|link} where link is either a foreign http(s) link or QDoc name. It can be used inside @desc.
+
+TypeExpr is type or (type name) or (type 1|type 2).
+
+Example:
+```
+/ The verb xkey sets the primary keys in a table.
+/ The left argument is a symbol list of column names, which must belong to the table.
+/ The right argument is a table. If passed by reference, it is updated. If passed by value, a new table is returned.
+/ @param x (symbol|symbol list) Columns.
+/ @param y (symbol|table)  Table to be keyed.
+/ @returns (symbol|table) Table is keyed, what is returned depends on the second argument.
+/ @example `sym xkey `trade
+/ @see cols xcol xcols
+xkey
+```
+
+If you press <kbd>F1</kbd> on xkey you'll see this:
+![help](./resources/keyhelp.png)
+
+Note that QDoc also adds a link to the definition and allows you to request all references to the displayed name.
+
 ## settings
 
 Autocomplete looks for `.autocomplete-kdb-q.json` file in each project directory. This file can contain some settings:
@@ -69,12 +109,14 @@ Autocomplete looks for `.autocomplete-kdb-q.json` file in each project directory
 * ignorePaths - list of paths (relative or absolute) to ignore.
 * ignoreRoot - ignore all files or dirs in the project's root directory.
 * ignoreNames - ignore these names (like ".svn").
+* cache - path (relative or absolute) where to save cached data to reduce the start time in large projects.
 
 Example:
 ```
 {
   "ignorePaths": ["node_modules"],
   "includePaths": ["C:\\somepath\\test.q","C:\\somedir"],
-  "ignoreNames": ["a2014.q",".git"]
+  "ignoreNames": ["a2014.q",".git"],
+  "cache": ".cache"
 }
 ```

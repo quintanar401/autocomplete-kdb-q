@@ -5,7 +5,8 @@
       label: 'KDB-Q'
       submenu: [
         {label: 'Find definition', command: 'kdb-q:definition'},
-        {label: 'Find references', command: 'kdb-q:references'}
+        {label: 'Find references', command: 'kdb-q:references'},
+        {label: 'Show documentation', command: 'kdb-q:doc'}
       ]
     }
   ]
@@ -14,7 +15,8 @@
     'label': 'KDB-Q'
     'submenu': [
       {label: 'Find definition', command: 'kdb-q:definition'},
-      {label: 'Find references', command: 'kdb-q:references'}
+      {label: 'Find references', command: 'kdb-q:references'},
+      {label: 'Show documentation', command: 'kdb-q:doc'}
     ]
   }
 ]

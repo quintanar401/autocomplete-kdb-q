@@ -1,6 +1,6 @@
 {CompositeDisposable, Directory, File, TextBuffer} = require 'atom'
-Parser = require './parser'
 SymMap = require './symMap'
+QFile = require './file'
 _ = require 'underscore-plus'
 fs = require 'fs'
 nodePath = require 'path'
@@ -25,16 +25,18 @@ module.exports =
 
     constructor: ->
       @itemsToProcess = []
-      @openedFiles = []
       @files = {}
       @globals = new SymMap null
       @subscriptions = new CompositeDisposable
       # new file is opened
       @subscriptions.add atom.workspace.observeTextEditors (editor) =>
-        return unless editor.getGrammar().scopeName == "source.q"
+        return unless editor.getGrammar().scopeName is "source.q"
         # process the new buffer
-        if !(@getPath(editor) in @openedFiles)
-          @addBuffer editor
+        return if @files[path = @getPath(editor)]?.opened
+        @files[path]?.destroy()
+        @files[path] = new QFile path: path, buffer: editor.getBuffer(), globals: @globals
+        @files[path].onDidChangePath (o) => @updateFilePath(o.oldPath,o.newPath)
+        @files[path].onDidDestroy (p) => @removeFile p
       @subscriptions.add atom.project.onDidChangePaths (paths) =>
         debug "OnDidChangePaths: #{paths}"
         @updateProjectFiles paths
@@ -45,37 +47,61 @@ module.exports =
     dispose: =>
       @subscriptions.dispose()
       @subscriptions = null
+      f?.destroy() for p,f of @files
+      @globals.destroy()
+      @globals = null
       @projectCfgs = {}; @projectPaths = [];
-      @openedFiles = []; @itemsToProcess = []; @files = {}
+      @itemsToProcess = []; @files = {}
 
     lint: (editor)->
       return new Promise (resolve, reject) =>
         return resolve [] unless f = @files[@getPath editor]
-        debug 'LINT: '+f.path
-        resolve f.errors unless f.modified
-        f.lint = resolve
+        debug 'LINT: '+f.getPath()
+        resolve f.getErrors() unless f.isModified()
+        f.setLint resolve
 
     getSuggestions:  ({editor, bufferPosition, scopeDescriptor, prefix, activatedManually}) ->
       res = []
       path = @getPath editor
       return res unless prefix = @getPrefix editor, bufferPosition
-      res = res.concat (@files[path].map.getSymsByPrefix bufferPosition.row, prefix, true) if @files[path]?.map?
+      res = res.concat (@files[path].getSymMap().getSymsByPrefix bufferPosition.row, prefix, true) if @files[path]?.getSymMap()?
       res = res.concat @globals.getSymsByPrefix bufferPosition.row, prefix, false
       res.sort (x,y) -> if x.score > y.score then -1 else if x.score < y.score then 1 else 0
       res
 
     getReferences: (editor) ->
-      res = name: '', refs:[]
       pos = editor.getCursorBufferPosition()
       line = editor.lineTextForBufferRow(pos.row)
       debug "Reference line #{line} at #{pos.column}"
       prefix = @getPrefix editor, pos
-      res.name = prefix + @getPostfix line, pos
+      name = prefix + @getPostfix line, pos
+      @getReferencesByName name
+
+    getReferencesByName: (name) ->
+      res = name: name, refs:[]
       debug "Reference for #{res.name}"
       for p,f of @files
-        if f?.map?
-          res.refs = res.refs.concat (f.map.getSymsByName res.name).map (s) ->
+        if f?.getSymMap()?
+          res.refs = res.refs.concat (f.getSymMap().getSymsByName res.name).map (s) ->
             line: s.line+1, col: s.col, file: p, isAssign: s.isAssign, text: s.text
+      res
+
+    getDoc: (editor) ->
+      pos = editor.getCursorBufferPosition()
+      line = editor.lineTextForBufferRow(pos.row)
+      name = @getPrefix editor, pos
+      name += @getPostfix line, pos
+      name = name.slice 1 if name[0] is "`"
+      @getDocByRef name
+
+    getDocByRef: (ref) ->
+      res = []
+      for p,f of @files
+        if f?.getSymMap()?
+          s = f.getSymMap().getSymByName ref
+          if s?.doc
+            s.doc.path = p
+            res.push s
       res
 
     getPath: (editor) ->
@@ -92,66 +118,29 @@ module.exports =
       line = line.slice bufferPosition.column
       line.match(regex)?[0] or ''
 
-    isParsed: (path) ->
-      return false unless f = @files[path]
-      true
-
-    initFile: (path) ->
-      lint = @files[path]?.lint
-      @files[path]?.map?.destroy()
-      @files[path] = path: path, map: null, errors: null, parseTS: (new Date()).toISOString(), modified: false, lint: lint
-
     removeFile: (path) ->
-      @files[path].modified = false
-      @files[path].lint?([])
-      @files[path].lint = null
-      return if @isProjectFile path
+      @files[path]?.destroy()
       @files[path] = null
+      if item = @isProjectFile path
+        @itemsToProcess.push item
+        @scheduleUpdate()
+
+    updateFilePath: (oldPath,newPath) ->
+      @files[newPath]?.destroy()
+      @files[newPath] = @files[oldPath]
+      @files[oldPath] = null
+      if item = @isProjectFile oldPath
+        @itemsToProcess.push item
+        @scheduleUpdate()
 
     isProjectFile: (path) ->
-      for p in @projectPaths
-        return true if path.startsWith p
-      false
+      for p,c of @projectCfgs
+        return base: p, item: path if path in c.files
+      null
 
-    addBuffer: (editor) ->
-      bufferSubs = new CompositeDisposable
-      buffer = editor.getBuffer()
-      path = @getPath(editor)
-      @initFile path
-      @files[path].modified = true
-      parser = new Parser buffer
-      parser.onParsed => @processBuffer path, parser
-
-      @openedFiles.push path
-      bufferSubs.add buffer.onDidChange => @files[path]?.modified = true
-      bufferSubs.add buffer.onDidDestroy =>
-        debug 'onDidDestroy: '+path
-        @openedFiles = _.without @openedFiles, path
-        @removeFile path
-        parser.destroy()
-        bufferSubs.dispose()
-        parser = buffer = bufferSubs = null
-      bufferSubs.add buffer.onDidChangePath (newPath) =>
-        @openedFiles = _.without @openedFiles, path
-        @openedFiles.push newPath
-        @initFile newPath
-        # TODO: fix this for map
-        @files[newPath].map = @files[path]?.map
-        @files[newPath].errors = @files[path]?.errors
-        @removeFile path
-        path = newPath
-
-    processBuffer: (path, parser) ->
-      try
-        debug "process buffer "+path
-        @initFile path; f = @files[path]
-        f.errors = parser.getErrors().map (e) -> e.filePath = path; e
-        f.map = parser.getVars @globals
-        f.modified = false
-        f.lint?(f.errors)
-        f.lint = null
-      catch err
-        console.error 'KDB-Autocomplete: unexpected error: '+err
+    inProjectCfg: (p,path) ->
+      return false unless cfg = @projectCfgs[p]
+      !(path in cfg.ignorePaths) and !(nodePath.basename(path) in cfg.ignoreNames)
 
     processFiles: ->
       debug 'Process Project'
@@ -167,35 +156,28 @@ module.exports =
             if err
               console.error "autocomplete-kdb-q: can't read #{f.item.getPath()} with #{err}"
             else
-              files = files.filter (file) => (file.isDirectory() or /\.[qk]$/.test file.getPath()) and !(file.getPath() in @projectCfgs[f.base].ignorePaths)
-              files = files.filter (file) => !(file.getBaseName() in @projectCfgs[f.base].ignoreNames)
+              files = files.filter (file) => (file.isDirectory() or /\.[qk]$/.test file.getPath()) and @inProjectCfg f.base, file.getPath()
               debug "Loaded #{files.length} items"
+              @projectCfgs[f.base].files.push i.getPath() for i in files when i.isFile()
               files = files.map (file) -> base: f.base, item: file
-              @itemsToProcess = @itemsToProcess.concat files if files.length > 0
-            _.delay (=> @processFiles()), 100
+              @itemsToProcess = @itemsToProcess.concat files if files.length>0
+            @scheduleUpdate()
         else
           debug "Processing file #{f.item.getPath()}"
-          f.item.read(true).then (text) =>
-            debug "Loaded #{f.item.getPath()}"
-            if @isProjectFile f.item.getPath()
-              buffer = new TextBuffer text
-              parser = new Parser buffer
-              parser.onParsed =>
-                @processBuffer f.item.getPath(), parser
-                parser.destroy()
-                buffer.destroy()
-                parser = buffer = null
-                _.delay (=> @processFiles()), 100
-            else
-              _.delay (=> @processFiles()), 100
-           , (err) =>
-            console.error "autocomplete-kdb-q: can't read #{f.item.getPath()} with #{err}"
-            _.delay (=> @processFiles()), 100
+          path=f.item.getPath()
+          if !@files[path] and f.base in atom.project.getPaths() and path in @projectCfgs[f.base]?.files
+            @files[path] = new QFile path: path, file: f.item, pcfg: @projectCfgs[f.base], globals: @globals
+            @files[path].onDidDestroy (p) => @scheduleUpdate()
+            @files[path].onUpdated => @scheduleUpdate()
+            return
+          @scheduleUpdate()
       catch error
         console.error "autocomplete-kdb-q: unexpected error #{error}"
 
     updateProjectFiles: (paths) ->
       newDirs = []; oldDirs = []
+      modPath = nodePath.join atom.packages.getLoadedPackage('autocomplete-kdb-q').path, 'resources'
+      paths.push modPath unless modPath in paths
       for p in paths
         if p in @projectPaths
           oldDirs.push p
@@ -204,16 +186,18 @@ module.exports =
 
       debug "Changing project: old:#{oldDirs}, new:#{newDirs}"
       @projectPaths = paths
-      opened = @getPath e for e in atom.workspace.getTextEditors()
       for f of @files
-        @files[f] = null unless @isProjectFile(f) or f in opened
+        if !(@files[f]?.opened or @isProjectFile(f))
+          @files[f]?.destroy()
+          @files[f] = null
 
       newDirs.map (d) =>
         cfg = nodePath.join d, '.autocomplete-kdb-q.json'
-        @projectCfgs[d] = ignorePaths: [], ignoreNames: [], ignoreRoot: false
+        @projectCfgs[d] = ignorePaths: [], ignoreNames: [], ignoreRoot: false, files: [], cache: "", name: ""
         if fs.existsSync cfg
           try
             @projectCfgs[d] = JSON.parse fs.readFileSync cfg
+            @projectCfgs[d].files = []
             if @projectCfgs[d].includePaths
               for p in @projectCfgs[d].includePaths
                 @itemsToProcess.push base: d, item: (if nodePath.isAbsolute(p) then p else nodePath.join d, p)
@@ -222,7 +206,17 @@ module.exports =
               if nodePath.isAbsolute(p) then p else nodePath.join d, p
             @projectCfgs[d].ignoreNames ?= []
             @projectCfgs[d].ignoreRoot ?= false
+            @projectCfgs[d].name ?= nodePath.basename d
+            @projectCfgs[d].cache ?= ""
+            if cache = @projectCfgs[d].cache
+              @projectCfgs[d].cache = if nodePath.isAbsolute cache then cache else nodePath.join d, cache
+              try
+                fs.statSync @projectCfgs[d].cache
+              catch err
+                fs.mkdirSync @projectCfgs[d].cache
           catch error
             console.error "Couldn't load #{cfg}: " + error
       newDirs.map (d) => (@itemsToProcess.push base: d, item: new Directory d) unless @projectCfgs[d].ignoreRoot
-      _.delay (=> @processFiles()), 100
+      @scheduleUpdate()
+
+    scheduleUpdate: -> _.delay (=> @processFiles()), 100
