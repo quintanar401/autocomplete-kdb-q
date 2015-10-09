@@ -165,7 +165,7 @@ module.exports =
         else
           debug "Processing file #{f.item.getPath()}"
           path=f.item.getPath()
-          if !@files[path] and f.base in atom.project.getPaths() and path in @projectCfgs[f.base]?.files
+          if !@files[path] and (f.base in atom.project.getPaths() or @projectCfgs[f.base]?.name is "__internal") and path in @projectCfgs[f.base]?.files
             @files[path] = new QFile path: path, file: f.item, pcfg: @projectCfgs[f.base], globals: @globals
             @files[path].onDidDestroy (p) => @scheduleUpdate()
             @files[path].onUpdated => @scheduleUpdate()
