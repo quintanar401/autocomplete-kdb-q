@@ -18,3 +18,7 @@
 * Cache autocomplete info
 * Add QDoc support
 * Add help for stdlib
+## 0.5.0
+* Add the main help page + help on my atom packages
+* Add indexes for namespaces, syms, files
+* Several bug fixes

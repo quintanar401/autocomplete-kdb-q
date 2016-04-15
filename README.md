@@ -66,7 +66,7 @@ You can jump to the definition (assignment) of any name. Put the cursor on it an
 
 QDoc is implemented along JavaDoc and is compatible with the already existing QDoc schemas. All standard functions and .Q/.z functions are already documented.
 
-All tags are mutiline except @name, @file, @see and @module. @module and @file are not supported atm. All QDoc lines should start with /, all
+All tags are mutiline except @name, @file, @see, @noautocomplete and @module. @module and @file are not supported atm. All QDoc lines should start with /, all
 lines with more than one / are ignored allowing you to add private comments. The Q function or variable name should be on the next line after
 the comment block. Note that QDoc doesn't need the code to be correct.
 
@@ -80,7 +80,8 @@ The following tags are supported:
 * @throws Name text - Description of a possible exception. If there are several throws it is better to group them together.
 * @example code - Any Q code, it will be shown as if in the editor itself (editor is not used though).
 * @see name1 name2 ... - List of QDoc names, links will be added.
-* @link as {@link link} or {@link Some descr|link} where link is either a foreign http(s) link or QDoc name. It can be used inside @desc.
+* @link as {@link link} or {@link Some descr|link} where link is either a foreign http(s) link or a QDoc name. It can be used inside @desc.
+* @noautocomplete - suppress autocomplete for the current name. It can be used in general help articles.
 
 TypeExpr is type or (type name) or (type 1|type 2).
 

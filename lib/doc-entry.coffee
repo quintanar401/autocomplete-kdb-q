@@ -11,8 +11,8 @@
 # inside other tags - {@link desc|.some.value) or desc|http://sss
 
 internalTags = ['link']
-tags = ['desc','param','key','pkey','column','returns','throws','example','see','name','module','file','ginfo']
-oneRow = ['name','file','module','see','ginfo']
+tags = ['desc','param','key','pkey','column','returns','throws','example','see','name','module','file','ginfo','noautocomplete']
+oneRow = ['name','file','module','see','ginfo','noautocomplete']
 
 processInternalTags = (txt) ->
   txt.replace /\{@link\s+[^\}]*\}/g, (link) ->
@@ -45,7 +45,7 @@ preprocess =
     l = lines[0].match /(\S+)\s+(.*$)/
     return ["badFormat",lines.join ' '] unless l
     [l[1],l[2]+' '+lines.slice(1).join ' ']
-  'name': (lines) -> lines[0].match(/(\S*)/)?[1] || 'error'
+  'name': (lines) -> lines.join(' ').trim() || 'error'
   'file': (lines) -> preprocess['desc'](lines)
   'module': (lines) -> preprocess['throws'](lines)
   'see' : (lines) -> lines[0].split(' ').map((e) -> e.trim()).filter (e) -> e.length > 0
@@ -53,6 +53,7 @@ preprocess =
     lines = ((if i is 0 then l else l.slice 1) for l,i in lines)
     (if lines[0].length is 0 then lines.slice 1 else lines).join '\n'
   'ginfo': (lines) -> []
+  'noautocomplete': (lines) -> ''
 
 escMap =
   '&': '&amp;'
@@ -85,10 +86,12 @@ module.exports =
 
     getDoc: -> @doc?.doc
 
+    getSpec: -> @doc?.spec
+
     getLineTag: (lines) ->
       return ['eof',''] if lines.lines.length <= lines.row
       line = lines.lines[lines.row]
-      r = line.match(/\s*@(\w+)\s*(.*)/)
+      r = line.match(/^\s*@(\w+)\s*(.*)/)
       if r and r[1] in tags then [r[1],r[2]] else ['',line]
 
     getTag: (lines) ->
@@ -113,7 +116,7 @@ module.exports =
           p = doc[doc.length-1]
           p[t.tag] ?= []
           p[t.tag].push t
-        else if t.tag in ['name','file','module']
+        else if t.tag in ['name','file','module','noautocomplete']
           spec[t.tag] = t
         else if t.tag is 'example'
           t.txt = "<div class='lines'>"+(@genHtmlCode t.txt)+"</div>"
@@ -122,7 +125,7 @@ module.exports =
       {doc, spec}
 
     generateQDoc: (doc, spec) ->
-      res = "<h2>"+(if spec.name then "#{spec.name.txt}(#{@name})" else @name)+"</h2>"
+      res = "<h2>"+(if spec.name then "#{spec.name.txt}" else @name)+"</h2>"
       isParamBlock = isThrowsBlock = false
       for t,i in doc
         if t.tag is 'param'

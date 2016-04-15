@@ -84,6 +84,7 @@ module.exports =
       for n,s of @map
         continue unless s
         continue if s.global and lOnly
+        continue if s.doc?.getSpec()?.noautocomplete
         continue unless prefix and s.sym.text.startsWith prefix
         continue if s.sym.text.length <= prefix.length or prefix.length is 1
         continue unless s.inRange line
@@ -99,6 +100,11 @@ module.exports =
             s.sym.score += 1/(d+1)
         s.sym.replacementPrefix = prefix
         res.push s.sym
+      res
+
+    getSymsByFn: (res, fn) ->
+      for n,s of @map
+        res = fn res, s
       res
 
     destroy: ->

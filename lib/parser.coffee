@@ -142,7 +142,7 @@ module.exports =
           v.isGlobal = 'yes' if ty is 'function' or state.lvl is 0 or nval is '::'
           v.isAssign = true if nval in [':','::']
           # TODO: assign will not be set for the non-ns representation
-          if v.isGlobal is 'yes' and state.ns isnt ''
+          if v.isGlobal is 'yes' and state.ns isnt '' and t.value[0] isnt '.'
             v.isGlobal = 'file'
             l.names.push v
             v = text: state.ns+'.'+t.value, line: ln, col: t.col, qtype: 'name', isGlobal: 'yes', isAssign: v.isAssign

@@ -92,17 +92,79 @@ module.exports =
       name = @getPrefix editor, pos
       name += @getPostfix line, pos
       name = name.slice 1 if name[0] is "`"
-      @getDocByRef name
+      res = @getDocByRef name
+      if res.length is 0
+        name = editor.getQDocName?() or 'qdoc..toplevel'
+        res = @getDocByRef name
+      res
 
     getDocByRef: (ref) ->
-      res = []
+      if ref is 'qdoc..nsidx'
+        res = @extractSymsByFn (res,s) ->
+          return res unless s.global or s.doc
+          return res if s.sym.text[0] is '`'
+          p = (s.sym.text.match /^\.[^\.]*/)?[0] or '(global)'
+          p = "<td><a href='kdb://reference/qdoc..nsref#{p}'>#{p}</a></td>"
+          res.push p unless p in res
+          res
+        return "<h2>Namespace Index</h2>"+ (@createTbl res.sort())
+      if /^qdoc..nsref/.test ref
+        ns = (ref.slice 11)+'.'
+        res = @extractSymsByFn (res,s) ->
+          return res unless s.global or s.doc
+          return res if ns[0] is '.' and !s.sym.text.startsWith ns
+          return res if ns[0] is '(' and s.sym.text[0] is '.'
+          return res if s.sym.text[0] is '`'
+          p = "<td><a href='kdb://reference/#{s.sym.text}'>#{s.sym.text}</a></td>"
+          res.push p unless p in res
+          res
+        x = "<h2>Index for #{ns} namespace</h2>"+ (@createTbl res.sort())
+        return x
+      if ref is 'qdoc..symidx'
+        res = @extractSymsByFn (res,s) ->
+          return res unless s.sym.text[0] is '`'
+          p = "<td><a href='kdb://reference/#{s.sym.text}'>#{s.sym.text}</a></td>"
+          res.push p unless p in res
+          res
+        return "<h2>Symbol Index</h2>"+ (@createTbl res.sort())
+      if ref is 'qdoc..flidx'
+        res = []
+        for p,f of @files
+          res.push p = "<a href='kdb://reference/qdoc..file#{encodeURI p}'>#{p}</a>"
+        return "<h2>File Index</h2>#{res.sort().join('<br>')}<br>"
+      if /^qdoc..file/.test ref
+        fl = ref.slice 10
+        return unless m = @files[fl]?.getSymMap()
+        res = m.getSymsByFn [], (r,s) ->
+          return r unless  s.global or s.doc or s.sym.text[0] is "`"
+          p = "<td><a href='kdb://reference/#{s.sym.text}'>#{s.sym.text}</a></td>"
+          r.push p unless p in r
+          r
+        return "<h2>File #{fl} Index</h2>"+ (@createTbl res.sort())
+      res = []; lst = null
       for p,f of @files
         if f?.getSymMap()?
           s = f.getSymMap().getSymByName ref
+          lst = s if s
           if s?.doc
             s.doc.path = p
             res.push s
+      return "<h2>#{ref}</h2>No documentation is available.<br><a href='kdb://showtxtrefs/#{ref}'>Show references</a>|" if res.length is 0 and lst
+      return "<h2>Not found</h2>Name #{ref} is not found.<br>" if res.length is 0
       res
+
+    extractSymsByFn: (fn) ->
+      res = []
+      for p,f of @files
+        res = f.getSymMap().getSymsByFn res, fn
+      res
+
+    createTbl: (a) ->
+      res = ""
+      l = Math.ceil(a.length/3)-1
+      for i in [0..l]
+        res = res + "<tr>#{a[3*i]}#{a[1+3*i]||'<td></td>'}#{a[2+3*i]||'<td></td>'}</tr>"
+      "<table class='atom-kdb-reftbl'>"+res+"</table><br>"
 
     getPath: (editor) ->
       return path if path = editor.getPath()
