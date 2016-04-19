@@ -66,18 +66,21 @@ module.exports =
 
     # lines: { dirty, data: { tokens: { scopes, value } }, gen: 0, nextBlk: N, offset: N, blkChanged: true, names:[], state: XX}
     parseFile: (lines) ->
-      maySkip = true; state = 'ws'; ns = ''; offset = -1; @gen++
+      maySkip = skipTop = true; state = 'ws'; ns = ''; offset = -1; @gen++
       for l,i in lines
+        if skipTop and l.data.line[0] in [' ','\t']
+          l.state = 'ws'; l.errors = []; l.gen = @gen; maySkip = false
+          continue
+        skipTop = false
         offset++
         if l.state and maySkip
           state = l.state unless typeof l.state is 'string'
           continue
         l.errors = []; l.gen = @gen
-        maySkip = false
         prevState = l.state or null
-        # console.log l
         toks = l.data.tokens
         t0 = @getTokType toks[0]
+        maySkip = false
         if t0 is 'comment'
           l.state = 'comment'
           continue
