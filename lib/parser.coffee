@@ -68,7 +68,7 @@ module.exports =
     parseFile: (lines) ->
       maySkip = skipTop = true; state = 'ws'; ns = ''; offset = -1; @gen++
       for l,i in lines
-        if skipTop and l.data.line[0] in [' ','\t']
+        if skipTop and /\s/.test l.data.line[0]
           l.state = 'ws'; l.errors = []; l.gen = @gen; maySkip = false
           continue
         skipTop = false

@@ -129,7 +129,8 @@ qdoc..cfgfiles
 / <li> ResultFontSize - in order to see as much data as possible you can set a smaller font than in other editor views. </li>
 / <li> maxResults - if you close the query view all text will be lost but when you reopen it maxResults last queries will be added to the view.</li>
 / <li> maxFullResults - raw query data gets deleted to free memory for all maxResults except the last maxFullResults.</li>
-/ <li> showWidth and showHeight - similar to \c command in Q console.</li></ul>
+/ <li> showWidth and showHeight - similar to \c command in Q console.</li>
+/ <li> resultFmt - customize how the results are printed into Query Results window. It is 'INFO RES QUERY' by default and these tags can be rearraged or dropped.</li></ul>
 / <p> Text in the query view is divided into two parts by '=== cut line ===' line. New query results get printed after this line.
 / The space above can be used for ad-hoc queries. Thus the query view can be used as a Q console inside the editor. </p>
 / <p>Some additional information is printed for each query - status, server, query execution time, number of rows and table prototype/returned type.
