@@ -68,10 +68,9 @@ module.exports =
     parseFile: (lines) ->
       maySkip = skipTop = true; state = 'ws'; ns = ''; offset = -1; @gen++
       for l,i in lines
-        if skipTop and /\s/.test l.data.line[0]
+        if skipTop and (l.data.line.length is 0 or /\s/.test l.data.line[0])
           l.state = 'ws'; l.errors = []; l.gen = @gen; maySkip = false
           continue
-        skipTop = false
         offset++
         if l.state and maySkip
           state = l.state unless typeof l.state is 'string'
@@ -84,7 +83,7 @@ module.exports =
         if t0 is 'comment'
           l.state = 'comment'
           continue
-        col = 0
+        col = 0; skipTop = false
         for t in toks
           t.col = col
           col += t.value.length
