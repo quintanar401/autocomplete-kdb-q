@@ -867,7 +867,7 @@ dsave
 / {x+1} each til 10
 / til[10] each 1 3 5
 / `globalFunc each til 10
-/ @see over scap prior peach
+/ @see over scan prior peach
 each
 
 / The ej verb joins two tables on a given list of columns. Since 2.6.
