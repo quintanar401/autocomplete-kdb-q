@@ -28,7 +28,7 @@ class DocView extends HTMLElement
       h = @syms + "<a href='kdb://reference/qdoc..toplevel'>Help</a></div>"
     else
      h = ""
-     for s,i in syms
+     for s,i in @syms
        h += s.doc.getDoc()
        h += "<div class='text-smaller' style='margin-top: 10px;'><a href='kdb://gotodocdef/#{i}'>Defined in #{s.doc.path} at #{1+s.doc.xy[0]}:#{1+s.doc.xy[1]}</a><br>"
        h += "<a href='kdb://showrefs/#{i}'>Show references</a>|<a href='kdb://reference/qdoc..toplevel'>Help</a></div>"
