@@ -74,6 +74,7 @@ module.exports =
         offset++
         if l.state and maySkip
           state = l.state unless typeof l.state is 'string'
+          skipTop = typeof l.state is 'string'
           continue
         l.errors = []; l.gen = @gen
         prevState = l.state or null
@@ -91,7 +92,7 @@ module.exports =
         if toks.length is 0
           l.state = 'ws'
           continue
-        if typeof lines[i-1]?.state is 'string' and lines[i-1].state is 'syscmd' and t0 is 'ws'
+        if typeof lines[i-1]?.state is 'string' and lines[i-1].state in ['syscmd','indent-error'] and t0 is 'ws'
           l.state = 'indent-error'
           l.errors.push @getErr "Indented code is unreachable if not preceded by the unindented code", i, {col: 0, value: l.data.line}
           continue
