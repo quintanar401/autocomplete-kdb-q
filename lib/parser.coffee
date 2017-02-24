@@ -78,7 +78,8 @@ module.exports =
           continue
         l.errors = []; l.gen = @gen
         prevState = l.state or null
-        toks = l.data.tokens
+        l.data.qTokens = l.data.tokens unless l.data.qTokens
+        toks = l.data.qTokens
         t0 = @getTokType toks[0]
         maySkip = false
         if t0 is 'comment'

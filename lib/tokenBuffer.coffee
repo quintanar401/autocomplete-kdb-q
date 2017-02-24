@@ -65,7 +65,12 @@ class TokenBuffer
     while true
       if @lines[n]?.dirty
         @lines[n].data = @grammar.tokenizeLine @buffer.lineForRow(n), (if n is 0 then null else @lines[n-1].data.ruleStack), n is 0
+        @lines[n].lvl2 = @lines[n].data.openScopeTags.length>1 or @lines[n].data.ruleStack.length>1
         @lines[n].dirty = false
+      else
+        if n>0 and (@lines[n].lvl2 or @lines[n-1].lvl2)
+          @lines[n] = dirty: true
+          continue
       n++
       break if @lines.length is n or (new Date) - d > 50
     _.defer => @updateNextChunk n

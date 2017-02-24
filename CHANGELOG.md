@@ -1,3 +1,7 @@
+## 0.5.6
+* fix comment parsing
+* fix tokenizer issue
+
 ## 0.5.5
 * fix parse bugs and 13.0 style change
 
