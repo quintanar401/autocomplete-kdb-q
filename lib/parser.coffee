@@ -74,7 +74,7 @@ module.exports =
         offset++
         if l.state and maySkip
           state = l.state unless typeof l.state is 'string'
-          skipTop = typeof l.state is 'string'
+          skipTop = skipTop and typeof l.state is 'string'
           continue
         l.errors = []; l.gen = @gen
         prevState = l.state or null
