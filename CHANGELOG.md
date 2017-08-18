@@ -1,3 +1,6 @@
+## 0.5.7
+* fix reparsing issue causing erroneous bracket warnings
+
 ## 0.5.6
 * fix comment parsing
 * fix tokenizer issue

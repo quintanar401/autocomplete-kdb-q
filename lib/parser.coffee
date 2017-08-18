@@ -74,12 +74,11 @@ module.exports =
         offset++
         if l.state and maySkip
           state = l.state unless typeof l.state is 'string'
-          skipTop = skipTop and typeof l.state is 'string'
+          skipTop = typeof l.state is 'string'
           continue
         l.errors = []; l.gen = @gen
         prevState = l.state or null
-        l.data.qTokens = l.data.tokens unless l.data.qTokens
-        toks = l.data.qTokens
+        toks = l.data.tokens
         t0 = @getTokType toks[0]
         maySkip = false
         if t0 is 'comment'
