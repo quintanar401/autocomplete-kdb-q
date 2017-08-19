@@ -1,7 +1,7 @@
 {
   "name": "autocomplete-kdb-q",
   "main": "./lib/autocomplete-kdb-q",
-  "version": "0.5.8",
+  "version": "0.5.9",
   "description": "Autocomplete provider for KDB+ Q",
   "keywords": [
     "KDB",
