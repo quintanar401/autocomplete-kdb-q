@@ -1,3 +1,6 @@
+## 0.5.8
+* revert accidental rollback in the prev commit + allow \ts to span several lines without an error
+
 ## 0.5.7
 * fix reparsing issue causing erroneous bracket warnings
 

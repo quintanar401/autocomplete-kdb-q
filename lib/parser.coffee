@@ -74,11 +74,12 @@ module.exports =
         offset++
         if l.state and maySkip
           state = l.state unless typeof l.state is 'string'
-          skipTop = typeof l.state is 'string'
+          skipTop = skipTop and typeof l.state is 'string'
           continue
         l.errors = []; l.gen = @gen
         prevState = l.state or null
-        toks = l.data.tokens
+        l.data.qTokens = l.data.tokens unless l.data.qTokens
+        toks = l.data.qTokens
         t0 = @getTokType toks[0]
         maySkip = false
         if t0 is 'comment'
@@ -92,7 +93,10 @@ module.exports =
         if toks.length is 0
           l.state = 'ws'
           continue
-        if typeof lines[i-1]?.state is 'string' and lines[i-1].state in ['syscmd','indent-error'] and t0 is 'ws'
+        if typeof lines[i-1]?.state is 'string' and lines[i-1].state in ['syscmd','syscmdt','indent-error'] and t0 is 'ws'
+          if lines[i-1].state is "syscmdt"
+            l.state = "syscmdt"
+            continue
           l.state = 'indent-error'
           l.errors.push @getErr "Indented code is unreachable if not preceded by the unindented code", i, {col: 0, value: l.data.line}
           continue
@@ -101,7 +105,7 @@ module.exports =
           l.errors.push @getErr "Unmatched opening bracket: "+j.value, j.line, j for j in state.parens
         if t0 is 'syscmd'
           state = t0
-          l.state = t0
+          l.state = if /^\\ts? /.test toks[0].value then "syscmdt" else t0
           if /^\\d /.test toks[0].value
             ns = toks[0].value.match(/^\\d\s+(\.[a-zA-Z0-9]*)/)?[1] || ''
             ns = '' if ns is '.'
