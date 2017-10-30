@@ -1,4 +1,7 @@
-## 0.5.8
+## 0.5.10
+* Adjust documentation
+
+## 0.5.9
 * revert accidental rollback in the prev commit + allow \ts to span several lines without an error
 
 ## 0.5.7

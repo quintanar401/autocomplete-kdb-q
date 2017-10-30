@@ -150,7 +150,7 @@ qdoc..execview
 .z.a
 
 / Auth from cookie.
-/ {@link See more.|http://code.kx.com/wiki/Reference/dotzdotac}
+/ {@link See more.|http://code.kx.com/q/ref/dotz/#zac-http-auth-from-cookie}
 .z.ac
 
 / Dependencies.
@@ -158,15 +158,18 @@ qdoc..execview
 .z.b
 
 / Bad message.
-/ {@link See more.|http://code.kx.com/wiki/Releases/ChangesIn2.7#IPCMessageValidator}
+/ {@link See more.|http://code.kx.com/q/ref/dotz/#zbm-msg-validator}
 / @param x message Bad message.
 .z.bm
 
 / Physical core count.
 .z.c
 
+/ TLS connection status.
+.z.e
+
 / Action on exit.
-/ {@link See more.|http://code.kx.com/wiki/Reference/dotzdotexit}
+/ {@link See more.|http://code.kx.com/q/ref/dotz/#zexit-action-on-exit}
 / @param x int Exit argument.
 / @see .z.pc exit
 .z.exit
@@ -175,7 +178,7 @@ qdoc..execview
 .z.f
 
 / Returns the host name as a symbol.
-/ {@link See more.|http://code.kx.com/wiki/Reference/dotzdoth}
+/ {@link See more.|http://code.kx.com/q/ref/dotz/#zh-host}
 / @see .Q.host .z.a
 .z.h
 
@@ -197,7 +200,7 @@ qdoc..execview
 / System local time (as timespan) in nanoseconds.
 .z.N
 
-/ Return the kdb+ operating system version as a symbol.
+/ Return the kdb+ operating system version as a symbol. Current values are w32, w64, l32, l64, s32, s64 (Solaris), v64 (Solaris on Intel).
 .z.o
 
 / System gmt timestamp in nanoseconds.
@@ -218,11 +221,11 @@ qdoc..execview
 .z.pg
 
 / peach handles.
-/ {@link See more.|http://code.kx.com/wiki/Reference/dotzdotpd}
+/ {@link See more.|http://code.kx.com/q/ref/dotz/#zpd-peach-handles}
 .z.pd
 
 / Called when a synchronous http request comes into the kdb+ session.
-/ {@link See more.|http://code.kx.com/wiki/Reference/dotzdotph}
+/ {@link See more.|http://code.kx.com/q/ref/dotz/#zph-http-get}
 / @param x request List with two values - the request body and headers.
 / @see .z.pp .z.pm .z.pg .z.ps
 .z.ph
@@ -317,7 +320,7 @@ qdoc..execview
 .z.ws
 
 / Returns the command line arguments as a list of strings.
-/ {@link See more.|http://code.kx.com/wiki/Reference/dotzdotx}
+/ {@link See more.|http://code.kx.com/q/ref/dotz/#zx-argv}
 / @see .Q.opt .Q.def
 .z.x
 
@@ -340,7 +343,7 @@ qdoc..execview
 .z.D
 
 / Zip defaults.
-/ {@link See more.|http://code.kx.com/wiki/Reference/dotzdotzd}
+/ {@link See more.|http://code.kx.com/q/ref/dotz/#zzd-zip-defaults}
 .z.zd
 
 / Adds y months to a date x.
@@ -374,7 +377,7 @@ qdoc..execview
 .Q.dd
 
 / Saves a table splayed to a specific partition of a database sorted (`p#) on a specified field.
-/ {@link See more.|http://code.kx.com/wiki/DotQ/DotQDotdpft}
+/ {@link See more.|http://code.kx.com/q/ref/dotq/#qdpft-save-table}
 / @param dir symbol Directory.
 / @param partition date Partition, usually a date.
 / @param column symbol Column with `#p attribute.
@@ -383,6 +386,12 @@ qdoc..execview
 .Q.dpft
 
 / Loop M&1000000 rows at a time - load/process/save.
+/ @example
+/ d:(`:/dst/taq;2000.10.02;`trade)
+/ s:(`:/src/taq;19;0)  / nonpositive length from end
+/ f:`time`price`size`stop`corr`cond`ex
+/ g:{x[`stop]=:240h;@[x;`price;%;1e4]}
+/ .Q.dsftg[d;s;f;t;g]
 .Q.dsftg
 
 / Defaults and types can be provided with .Q.def.
@@ -390,7 +399,7 @@ qdoc..execview
 .Q.def
 
 / Enumerate a table in a DB.
-/ {@link See more.|http://code.kx.com/wiki/Cookbook/SplayedTables#Enumeratingvarcharcolumnsinatable}
+/ {@link See more.|http://code.kx.com/q/ref/dotq/#qen-enumerate-varchar-cols}
 / @param dir symbol DB directory.
 / @param table table Table to be enumerated.
 / @example .Q.en[`:dir] trade
@@ -403,14 +412,14 @@ qdoc..execview
 .Q.fc
 
 / Appends columns to a table with null values.
-/ {@lin See more.|http://code.kx.com/wiki/DotQ/DotQDotff}
+/ {@link See more.|http://code.kx.com/q/ref/dotq/#qff-append-columns}
 .Q.ff
 
 / .Q.fk[col] (new in 2.4) will return ` if the column is not an fkey or `tab if the column is a fkey into tab.
 .Q.fk
 
 / Formats a number.
-/ {@link See more.|http://code.kx.com/wiki/DotQ/DotQDotfmt}
+/ {@link See more.|http://code.kx.com/q/ref/dotq/#qfmt-format}
 / @param l int Total char number.
 / @param d int Decimal places.
 / @param v vector Numbers.
@@ -419,19 +428,23 @@ qdoc..execview
 
 / .Q.f will create a string like %.2f.
 / .Q.f multiplies the incoming number by the number of significant digits you request, rounds it to a long, stringifies it, then then positions the "." at the number of sig digits from the right.
-/ {@link See more.|http://code.kx.com/wiki/DotQ/DotQDotf}
+/ {@link See more.|http://code.kx.com/q/ref/dotq/#qf-format}
 .Q.f
 
+/ .Q.fs for pipes. (Since V3.4) Reads conveniently sized lumps of complete "\n" delimited records from a pipe and applies a function to each record.
+/ {@link See more.|http://code.kx.com/q/ref/dotq/#qfps-streaming-algorithm}
+.Q.fps
+
 / Loops over a file and grabs convenient sized lumps of complete records ("\n" delimited) and allows you to apply a function to each record.
-/ {@link See more.|http://code.kx.com/wiki/DotQ/DotQDotfs}
+/ {@link See more.|http://code.kx.com/q/ref/dotq/#qfs-streaming-algorithm}
 .Q.fs
 
 / Loops over a file and grabs specifically sized lumps of complete records ("\n" delimited) and allows you to apply a function to each record.
-/ {@link See more.|http://code.kx.com/wiki/DotQ/DotQDotfsn}
+/ {@link See more.|http://code.kx.com/q/ref/dotq/#qfsn-streaming-algorithm}
 .Q.fsn
 
 / Takes a function designed for simple (non-keyed) tables, and creates a new function that also works on keyed tables.
-/ {@link See more.|http://code.kx.com/wiki/DotQ/DotQDotft}
+/ {@link See more.|http://code.kx.com/q/ref/dotq/#qft-apply-simple}
 .Q.ft
 
 / Apply f to every unique element of the vector and then to copy those results to the whole vector.
@@ -441,7 +454,7 @@ qdoc..execview
 .Q.fu
 
 / Invokes the garbage collector.
-/ {@link See more.|http://code.kx.com/wiki/DotQ/DotQDotgc}
+/ {@link See more.|http://code.kx.com/q/ref/dotq/#qgc-garbage-collect}
 / @see .Q.w
 .Q.gc
 
@@ -449,11 +462,23 @@ qdoc..execview
 / @example .Q.hdpf[historicalport;directory;partition;`p#field]
 .Q.hdpf
 
+/ Returns as a list of strings the result of an HTTP[S] GET query. (Since V3.4).
+/ @param x symbol URL
+/ @example .Q.hg`:http://www.google.com
+/ {@link See more.|http://code.kx.com/q/ref/dotq/#qhg-http-get}
+.Q.hg
+
+/ Returns as a list of strings the result of an HTTP[S] POST query. (Since V3.4)
+/ @param x symbol URL.
+/ @param y string MIME type.
+/ @param z string POST request.
+.Q.hp
+
 / .Q.id can be used on atoms to remove non-alphanumeric characters, or on tables to rename columns by removing characters that interfere with select/exec/update and adding "1" to column names which clash with commands in .q namespace.
 .Q.id
 
 / Returns rows using indecies into a parted table.
-/ {@link See more.|http://code.kx.com/wiki/DotQ/DotQDotind}
+/ {@link See more.|http://code.kx.com/q/ref/dotq/#qind-partitioned-index}
 .Q.ind
 
 / j10 encodes against the alphabet .Q.b6, this is a base64 encoding.
@@ -561,7 +586,7 @@ abs
 acos
 
 / Joins tables along columns that are usually time columns.
-/ In the join, the last value (most recent time) is taken. {@link See more.|http://code.kx.com/wiki/Reference/aj}
+/ In the join, the last value (most recent time) is taken. {@link See more.|http://code.kx.com/q/ref/joins/#aj-aj0-asof-join}
 / @param cols (symbol list) Columns to join.
 / @param t1 table First table.
 / @param t2 table Second table.
@@ -637,7 +662,7 @@ asin
 / The verb asof takes a table as the left argument and a dictionary or a table as a right argument.
 / The last key of the dictionary, or the last column of the table, on the right must correspond to a time column of the table on the left.
 / The result is the values from the last rows matching the rest of the keys and time less or equal to the time in the right hand side table.
-/ {@link See more.|http://code.kx.com/wiki/Reference/asof}
+/ {@link See more.|http://code.kx.com/q/ref/joins/#asof}
 / @see lj ljf ej ij pj uj upsert aj aj0 wj wj1
 asof
 
@@ -683,7 +708,7 @@ avg
 avgs
 
 / bin gives the index of the last element in x which is &lt;=y. The result is -1 for y less than the first element of x.
-/ {@link See more.|http://code.kx.com/wiki/Reference/bin}
+/ {@link See more.|http://code.kx.com/q/ref/search/#bin-binr}
 / @param x list Search list, must be sorted.
 / @param y value Value(s) to search.
 / @returns (atom|list) Indecies of y.
@@ -696,7 +721,7 @@ avgs
 bin
 
 / binr (bin right), introduced in kdb+3.0 2012.07.26, gives the index of the first element in x which is &gt;=y.
-/ {@link See more.|http://code.kx.com/wiki/Reference/bin}
+/ {@link See more.|http://code.kx.com/q/ref/search/#bin-binr}
 / @see bin ss
 binr
 
@@ -852,7 +877,7 @@ do
 / The left argument is the save path as a symbol or symbol vector, the right argument is a list of table names,
 / and the result is the list of table names. The first column of each table saved has the `p attribute applied to it. If the path
 / is a vector, the first element is the hdb root (where the sym file, if any, will be stored), while the remaining elements are a path within the hdb (e.g. a partition).
-/ {@link See more.|http://code.kx.com/wiki/Reference/dsave}
+/ {@link See more.|http://code.kx.com/q/ref/filewords/#dsave}
 / @param x (symbol|symbol list) Path.
 / @param y (symbol|symbol list) Tables.
 / @example
@@ -876,6 +901,12 @@ each
 / The result has one combined record for each row in t1 that matches t2 on columns c.
 / @see lj ljf ij pj uj upsert asof aj aj0 wj wj1
 ej
+
+/ Returns the exponentially-weighted moving averages (EWMA, also known as exponential moving average, EMA) of y, with x as the smoothing parameter.
+/ @param x list Numeric atom or list of length count y.
+/ @param y list Numeric list.
+/ @example ema[1%3;1,10#0]
+ema
 
 / enlist returns its arguments in a list. Where the argument is a dictionary, the result is the corresponding table.
 / @param x value Any value.
@@ -905,7 +936,7 @@ eval
 except
 
 / Selects a subset of data from a table or dictionary.
-/ {@link See more.|http://code.kx.com/wiki/Reference/exec}
+/ {@link See more.|http://code.kx.com/q/ref/qsql/#exec}
 / @example
 / exec qty from sp              / result is a list
 / exec (qty;s) from sp          / two lists
@@ -935,7 +966,7 @@ exit
 exp
 
 / fby is designed to collapse a cascaded select ... from select ... by ... from t expressions into one select ... by ... from ... where ... fby .....
-/ {@link See more.|http://code.kx.com/wiki/Reference/fby}
+/ {@link See more.|http://code.kx.com/q/ref/qsql/#fby}
 / @example (aggr;data) fby group
 fby
 
@@ -1141,7 +1172,7 @@ keys
 last
 
 / The verb like is the q pattern-matching primitive.
-/ Patterns in text are expressed by using certain reserved characters that have special meanings. {@link See more.|http://code.kx.com/wiki/Reference/like}
+/ Patterns in text are expressed by using certain reserved characters that have special meanings. {@link See more.|http://code.kx.com/q/ref/strings/#like}
 / @desc The right argument is a character string holding the pattern. The left argument can be:
 / <ul><li>a symbol atom or vector</li>
 / <li>a char vector or list of char vectors</li>
@@ -1194,7 +1225,7 @@ lower
 
 / The lsq verb is a matrix divide.
 / x and y must be floating point matrices with the same number of columns. The number of rows of y must be less than
-/ or equal to the number of columns, and the rows of y must be linearly independent. {@link See more.|http://code.kx.com/wiki/Reference/lsq}
+/ or equal to the number of columns, and the rows of y must be linearly independent. {@link See more.|http://code.kx.com/q/ref/matrixes/#lsq}
 / @param x matrix Float matrix.
 / @param y matrix Float matrix.
 / @returns matrix Float matrix.
@@ -1479,7 +1510,7 @@ null
 or
 
 / The over adverb takes a function of two arguments on its left, and creates a new atomic function that applies to successive items of its list argument.
-/ The result is the result of the last application of the function. {@link See more.|http://code.kx.com/wiki/Reference/over}
+/ The result is the result of the last application of the function. {@link See more.|http://code.kx.com/q/ref/control/#over}
 / @param f value Function or similar object.
 / @param v value Object to apply f to.
 / @example
@@ -1489,10 +1520,10 @@ or
 / @see scan each peach prior
 over
 
-/ The parse function parses a string as a q expression, and returns the {@link parse tree|http://code.kx.com/wiki/Reference/parse_tree}.
+/ The parse function parses a string as a q expression, and returns the {@link parse tree|http://code.kx.com/q/ref/parsetrees/#parse}.
 / The string should be a well-formed q expression, and should not contain newlines.
 / The resulting parse tree can be executed with the eval function.
-/ {@link See more.|http://code.kx.com/wiki/Reference/parse}
+/ {@link See more.|http://code.kx.com/q/ref/parsetrees/#parse}
 / @param s string Parse string.
 / @returns expr Q expression.
 / @example
@@ -1504,7 +1535,7 @@ parse
 / The peach adverb is used for parallel execution of a function over data.
 / For example, this can be useful for computationally expensive functions, or for accessing several drives at once from a single cpu.
 / In order to execute in parallel, q must be started with multiple slaves (-s).
-/ {@link See more.|http://code.kx.com/wiki/Reference/peach}
+/ {@link See more.|http://code.kx.com/q/ref/control/#peach}
 / @param f value Function or similar object.
 / @param v value Object to apply f to.
 / @example
@@ -1622,6 +1653,8 @@ raze
 / @example
 / read0`:test.txt
 / read0(`:/tmp/data;100000;100000)
+/ read0 0 / from console
+/ read0(h;8) / where h:hopen`$":fifo:///etc/redhat-release", read from FIFO
 / @see read1 load save dsave rload rsave get set value
 read0
 
@@ -1630,6 +1663,7 @@ read0
 / @example
 / read1`:test.dat
 / read1(`:/tmp/data;100000;100000)
+/ read1(h;8) / where h:hopen`$":fifo:///etc/redhat-release", read from FIFO
 / @see read0 load save dsave rload rsave get set value
 read1
 
@@ -1706,7 +1740,7 @@ rtrim
 / </li></ul>
 / @example r:save X / X must be a global var
 / save `a.txt
-/ @desc {@link See more.|http://code.kx.com/wiki/Reference/save}
+/ @desc {@link See more.|http://code.kx.com/q/ref/filewords/#save}
 / @see read0 read1 load rload rsave get set value
 save
 
@@ -1722,7 +1756,7 @@ save
 scan
 
 / Returns the statistical covariance of its arguments as a floating point number.
-/ {@link See more.|http://code.kx.com/wiki/Reference/scov}
+/ {@link See more.|http://code.kx.com/q/ref/stats-aggregates/#scov-statistical-covariance}
 / @param x (number list) First arg.
 / @param y (number list) Second arg.
 / @returns (float list) Covariance of x and y.
@@ -1731,7 +1765,7 @@ scan
 scov
 
 / Computes the statistical standard deviation of a list (as the square root of the statistical variance).
-/ {@link See more.|http://code.kx.com/wiki/Reference/sdev}
+/ {@link See more.|http://code.kx.com/q/ref/stats-aggregates/#sdev-statistical-standard-deviation}
 / @param x (number|number list|dictionary) Input value.
 / @returns float Deviation of x.
 / @example sdev 1.1 1.2 1.3
@@ -1747,7 +1781,7 @@ sdev
 / select[m n]       / start with m get n rows
 / select[order]     / sort the result by a column: >column or <column
 / select[n;order]   / like above but take n elements
-/ @desc More information on {@link select|http://code.kx.com/wiki/Reference/select}.
+/ @desc More information on {@link select|http://code.kx.com/q/ref/qsql/#select}.
 / @see delete exec insert upsert update
 select
 
@@ -1810,7 +1844,7 @@ sqrt
 
 / The function ss finds positions of a substring within a string.
 / It also supports some pattern matching capabilities of the function {@link like}.
-/ {@link See more.|http://code.kx.com/wiki/Reference/ss}
+/ {@link See more.|http://code.kx.com/q/ref/strings/#ss}
 / @param s string Search string.
 / @param p string Pattern.
 / @returns (long list) Indecies.
@@ -1884,22 +1918,23 @@ sums
 / 10 sv 2 3 5 7                 / If X and Y are numeric, it evaluates Y to base X.
 / 0 24 60 60 sv 2 3 5 7         / Like above but X may be a list. For example, to convert days, hours, minutes, seconds to seconds
 / 0x0 sv "x"$0 255              / If X is 0x0 and Y is a list of bytes of length 2, 4 or 8, it converts Y to the corresponding integer
+/ 0b sv 64#1b                   / Like 0x0 for bool vectors
 / @see vs
 sv
 
 / The aggregate svar function returns the variance of a numeric list.
-/ The result has type float. {@link See more.|http://code.kx.com/wiki/Reference/svar}
+/ The result has type float. {@link See more.|http://code.kx.com/q/ref/stats-aggregates/#svar-statistical-variance}
 / @param x (number|number list|dictionary) Input value.
 / @returns float Prefix variance of x.
 / @example svar 1.1 1.2 1.3
 / @see var cor cov scov dev mdev sdev
 svar
 
-/ The function system executes {@link system commands|http://code.kx.com/wiki/Reference/SystemCommands}, and is a cover for the \ system command.
+/ The function system executes {@link system commands|http://code.kx.com/q/ref/syscmds/#system}, and is a cover for the \ system command.
 / @example
 / system "X"       / get X's value
 / system "X value" / set X's value
-/ system "a .ns"   / tables
+/ system "a [.ns]"   / tables
 / system "b"       / views
 / system "B"       / pending views
 / system "c X Y"   / console size
@@ -1921,7 +1956,7 @@ svar
 / system "ts[:num] expr" / time and space of exec, repeat num times
 / system "u"       / reload password file
 / system "v"       / variables
-/ system "w 0"     / workspace size
+/ system "w [0]"     / workspace size
 / system "W"       / week offset
 / system "x .z.fn" / delete handler
 / system "z N"     / date format - 0 or 1
@@ -1969,12 +2004,12 @@ txf
 
 / The function type returns the type of its argument as a short integer.
 / Negative numbers are for atoms, positive numbers are for lists, and zero is a general K list.
-/ @desc The type codes can be found {@link here|http://code.kx.com/wiki/Reference/type}.
+/ @desc The type codes can be found {@link here|http://code.kx.com/q/ref/metadata/#type}.
 / @example type 10
 / @see meta
 type
 
-/ The uj verb is a type of union join that generalizes {@link comma|http://code.kx.com/wiki/Reference/Comma}.
+/ The uj verb is a type of union join that generalizes {@link comma|http://code.kx.com/q/ref/lists/#join}.
 / The result has the union of the columns filled with nulls where necessary.
 / @example r:t1 uj t2
 / @desc If t1 and t2 have matching key columns, then records in t2 update matching records in t1. Otherwise, t2 records are inserted.
@@ -2002,7 +2037,7 @@ union
 / Updates a table or a dictionary.
 / @example
 / update col:expr by expr from table where cond
-/ @desc For more infomation see {@link Q for Mortals|http://code.kx.com/wiki/JB:QforMortals2/queries_q_sql#The_update_Template} or {@link select}.
+/ @desc For more infomation see {@link Q for Mortals|http://code.kx.com/q4m3/9_Queries_q-sql/#95-the-update-template} or {@link select}.
 / @see delete exec insert select upsert
 update
 
@@ -2064,6 +2099,8 @@ views
 / "," vs "one,two,three" / If Y is a string, and X is a character or string, it cuts Y using X as the delimiter, returning a list of strings
 / 0b vs 23173            / If X is 0b and Y is an integer, it returns the bit representation of Y
 / 0x0 vs 2413            / If X is 0x0 and Y is a number, it returns the internal representation of Y, with each byte in hex
+/ 10 vs 1995             / Representation of y in base x
+/ 24 60 60 vs 3805       / Representation of y in base x
 / ` vs `mywork.dat       / If X is the back tick `, then it splits symbols on `.
 / ` vs `:/kdb/mywork.dat / Breaks file handles into directory & file parts
 / ` vs "abc\ndef\nghi"   / If y is a string it breaks into lines (cross-platform - both UNIX (\n) and DOS (\r\n) end of lines)
@@ -2129,7 +2166,7 @@ within
 / Typically. this might be:
 / @example wj[w;`sym`time;trade;(quote;(max;`ask);(min;`bid))]
 / @desc wj1 considers quotes on or after entry to the window. If the join is to consider quotes that arrive from the beginning of the interval, please use wj1.
-/ {@link See more.|http://code.kx.com/wiki/Reference/wj}
+/ {@link See more.|http://code.kx.com/q/ref/joins/#wj-wj1-window-join}
 / @see lj ljf ej ij pj uj upsert asof aj aj0 ww wj1
 wj
 
@@ -2171,7 +2208,7 @@ xasc
 
 / The xbar verb rounds its right argument down to the nearest multiple of the integer left argument.
 / The right argument can be any numeric or temporal type.
-/ {@link See more.|http://code.kx.com/wiki/Reference/xbar}
+/ {@link See more.|http://code.kx.com/q/ref/arith-integer/#xbar}
 / @example 3 xbar til 16
 / @see bin binr
 xbar
